@@ -1,8 +1,18 @@
 use notify::{RecursiveMode, Watcher, EventKind};
 use notify_debouncer_full::new_debouncer;
-use std::{path::{Path, PathBuf}, time::Duration, collections::HashMap};
+use std::{collections::HashMap, os::unix::fs::MetadataExt, path::{Path, PathBuf}, time::Duration};
 use std::fs;
 use std::{error::Error, io, process};
+use std::time::{SystemTime};
+extern crate chrono;
+use chrono::Local;
+use log::error;
+use log::info;
+use log::warn;
+use log::{debug, LevelFilter};
+use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Logger};
+use log4rs::config::{Appender, Root};
+use log4rs::Config;
 
 #[derive(Debug, serde::Deserialize)]
 struct Record {
@@ -10,18 +20,20 @@ struct Record {
     source_path: String,
     dest_path: String,
 }
+const DATE_FORMAT_STR: &'static str = "[%Y-%m-%d][%H:%M:%S]";
+
 /// Example for notify-debouncer-full
 fn main() {
     // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-
+    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     let path = std::env::args()
         .nth(1)
         .expect("Argument 1 needs to be a path");
 
-    println!("Watching {path}");
+    info!("Watching {path}");
 
     if let Err(error) = watch(path) {
-        println!("Error: {error:?}");
+        error!("Error: {error:?}");
     }
 }
 
@@ -53,7 +65,7 @@ fn watch<P: AsRef<Path>>(path: P) -> notify::Result<()> {
     //     println!("{},{:?}","\n\nLooping results.",result);
     // }
     for result in rx {
-        println!("{}","\nLooping results.");
+        // info!("{}","\nLooping results.");
         match result {
             Ok(events) => {
                 let mut unique_paths:HashMap<&str,EventKind> = HashMap::new();
@@ -68,10 +80,9 @@ fn watch<P: AsRef<Path>>(path: P) -> notify::Result<()> {
                 }
                 let _ = act_emitted_path(unique_paths);
             },
-            Err(errors) => errors.iter().for_each(|error| println!("{error:?}")),
+            Err(errors) => errors.iter().for_each(|error| error!("{error:?}")),
         }
-
-        println!("{}","waiting for the Next Event..");
+        info!("{}","waiting for the Next Event..");
     }
 
     Ok(())
@@ -83,31 +94,36 @@ fn act_emitted_path(dic:HashMap<&str,EventKind>)->Result<(), Box<dyn Error>>{
         if !file_exists {
             continue;
         }
+        // let date = Local::now();
         if kv.1.is_remove(){
-            println!("{}: This is a remove event not needed to act on..", kv.0);
+            info!("File Removed: {}", kv.0);
             // records
         }else{
-            println!("{}: use the path to check and act!!!",kv.0);
+            // info!("{}| emitted",kv.0);
+            _ = get_path_match(kv.0);
         }
     }
     
     Ok(())
 }
 
-// fn getPathMatch(e_path:&str)->Result<(), Box<dyn Error>>{
+fn get_path_match(e_path:&str)->Result<(), Box<dyn Error>>{
 
-//     let c_path = std::path::Path::new(e_path);
-//     let parent = c_path.parent().unwrap();
-//     let filename = c_path.file_name().unwrap();
-//     let ext = c_path.extension().unwrap();
+    let c_path = std::path::Path::new(e_path);
+    let parent = c_path.parent().unwrap();
+    let filename = c_path.file_name().unwrap();
+    let ext = c_path.extension().unwrap();
+    let fnwoext = c_path.metadata().unwrap();
 
-//     let mut rdr = csv::Reader::from_path("config.csv")?;
-//     for result in rdr.deserialize(){
-//         let mut record: Record = result?;
-//         if record.source_path.starts_with(parent.to_str().unwrap()){
+    info!("{:?}|{}|{}--> {}",parent,filename.to_str().unwrap(),ext.to_str().unwrap(), fnwoext.size());
 
-//         }
-//     }
+    // let mut rdr = csv::Reader::from_path("config.csv")?;
+    // for result in rdr.deserialize(){
+    //     let mut record: Record = result?;
+    //     if record.source_path.starts_with(parent.to_str().unwrap()){
 
-//     Ok(())
-// }
+    //     }
+    // }
+
+    Ok(())
+}
