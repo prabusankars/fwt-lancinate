@@ -1,31 +1,34 @@
+#[allow(dead_code)]
+#[allow(unused_imports)]
 use notify::{RecursiveMode, Watcher, EventKind};
 use notify_debouncer_full::new_debouncer;
-use std::{collections::HashMap, os::unix::fs::MetadataExt, path::{Path, PathBuf}, time::Duration};
-use std::fs;
-use std::{error::Error, io, process};
-use std::time::{SystemTime};
+use std::{collections::HashMap, os::unix::fs::MetadataExt, path::Path, time::Duration};
+// use std::fs;
+use std::error::Error;
+// use std::time::SystemTime;
 extern crate chrono;
-use chrono::Local;
+// use chrono::Local;
 use log::error;
 use log::info;
-use log::warn;
-use log::{debug, LevelFilter};
-use log4rs::{append::{console::ConsoleAppender, file::FileAppender}, encode::pattern::PatternEncoder, Logger};
-use log4rs::config::{Appender, Root};
-use log4rs::Config;
+// use log::warn;
+// use log::{debug, LevelFilter};
+use csv::Reader;
+
 
 #[derive(Debug, serde::Deserialize)]
 struct Record {
     sno : u16,
-    source_path: String,
-    dest_path: String,
+    source_folder: String,
+    dest_folder: String,
+    file_name:String,
+    base_name:String,
 }
+
 const DATE_FORMAT_STR: &'static str = "[%Y-%m-%d][%H:%M:%S]";
 
-/// Example for notify-debouncer-full
-fn main() {
-    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+fn main() -> Result<(),Box<dyn Error>> {
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
+    let whitelisted = read_csv_whitelist();
     let path = std::env::args()
         .nth(1)
         .expect("Argument 1 needs to be a path");
@@ -35,6 +38,7 @@ fn main() {
     if let Err(error) = watch(path) {
         error!("Error: {error:?}");
     }
+    Ok(())
 }
 
 fn watch<P: AsRef<Path>>(path: P) -> notify::Result<()> {
@@ -126,4 +130,24 @@ fn get_path_match(e_path:&str)->Result<(), Box<dyn Error>>{
     // }
 
     Ok(())
+}
+
+fn read_csv_whitelist() -> Result<Vec<Record>, Box<dyn Error>> {
+    println!("{}","into reading the csv");
+    let mut whitelisted:Vec<Record> = vec![];
+    let mut rdr = Reader::from_path("foo.csv")?;
+    let mut iter = rdr.records();
+    loop{
+        if let Some(result) = iter.next(){
+            let record = result?;
+            let row: Record = record.deserialize(None)?;
+            // println!("{:?}----> {:?}", record,row);
+            // println!("{:?}",row);
+            whitelisted.push(row);
+        }
+        else {
+            break;
+        }
+    }
+    Ok(whitelisted)
 }
