@@ -1,5 +1,5 @@
 SNO,SOURCE_FOLDER,DEST_FOLDER,FILE_NAME,BASE_NAME
-1,/workspace/fwt-lancinate/source,/workspace/fwt-lancinate/dest,xyz*.csv,xyz.csv
-2,/workspace/fwt-lancinate/source,/workspace/fwt-lancinate/dest,transactions*.csv,transactions.csv
-3,/workspace/fwt-lancinate/source,/workspace/fwt-lancinate/dest,subscribed_events.csv,subscribed_events.csv
-4,/workspace/fwt-lancinate/source,/workspace/fwt-lancinate/dest,failed_jobs.csv,failed_jobs.csv
+1,/home/prabu/code/rustlearn/filewatcher/source/xyz,/home/prabu/code/rustlearn/filewatcher/dest/xyz,xyz*.csv,xyz.csv
+2,/home/prabu/code/rustlearn/filewatcher/source,/home/prabu/code/rustlearn/filewatcher/dest,transactions*.csv,transactions.csv
+3,/home/prabu/code/rustlearn/filewatcher/source,/home/prabu/code/rustlearn/filewatcher/dest,subscribed_events.csv,subscribed_events.csv
+4,/home/prabu/code/rustlearn/filewatcher/source,/home/prabu/code/rustlearn/filewatcher/dest,failed_jobs.csv,failed_jobs.csv

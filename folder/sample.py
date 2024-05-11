@@ -1,7 +1,7 @@
 import os
 
-for i in range(10):
-    fpath = os.path.join(os.getcwd(),f"sample{i}.txt")
+for i in range(100):
+    fpath = os.path.join(os.getcwd(),f"failed_jobs{i}.csv")
     print(fpath)
     if os.path.exists(fpath): 
         os.remove(fpath)
