@@ -38,9 +38,15 @@ fn main() -> Result<(),Box<dyn Error>> {
         .unwrap();
     let csv = &settings.get_string("whitelist_csv").unwrap();
     let whitelisted = read_csv_whitelist(csv);
-    let path = std::env::args()
+    let mut path:String = String::from(std::env::current_dir()?.to_str().unwrap());
+    if std::env::args().len() >1 {
+        path = std::env::args()
         .nth(1)
-        .expect("Argument 1 needs to be a path");
+        .expect("Argument 1: Path to monitor must be provided.");
+    }
+    // let path = std::env::args()
+    //     .nth(1)
+    //     .expect("Argument 1: Path to monitor must be provided.");
 
     info!("Watching {path}");
 
@@ -52,17 +58,14 @@ fn main() -> Result<(),Box<dyn Error>> {
 
 fn watch<P: AsRef<Path>>(path: P, whitelist:Vec<Record>) -> notify::Result<()> {
     let (tx, rx) = std::sync::mpsc::channel();
-
     // Create a new debounced file watcher with a timeout of 2 seconds.
     // The tickrate will be selected automatically, as well as the underlying watch implementation.
     let mut debouncer = new_debouncer(Duration::from_secs(5), Some(Duration::from_secs(5)), tx)?;
-
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.
     debouncer
         .watcher()
         .watch(path.as_ref(), RecursiveMode::Recursive)?;
-
     // Initialize the file id cache for the same path. This will allow the debouncer to stitch together move events,
     // even if the underlying watch implementation doesn't support it.
     // Without the cache and with some watch implementations,
@@ -70,13 +73,6 @@ fn watch<P: AsRef<Path>>(path: P, whitelist:Vec<Record>) -> notify::Result<()> {
     debouncer
         .cache()
         .add_root(path.as_ref(), RecursiveMode::Recursive);
-
-    // print all events and errors
-    // let somedata  = rx.recv();
-    // println!("{:?}",somedata);
-    // for result in somedata{
-    //     println!("{},{:?}","\n\nLooping results.",result);
-    // }
 
     let shared_whitelist = Arc::new(whitelist);
     let mut unique_paths:HashMap<String,EventKind> = HashMap::new();
@@ -98,7 +94,7 @@ fn watch<P: AsRef<Path>>(path: P, whitelist:Vec<Record>) -> notify::Result<()> {
         }
         let child_whitelist = Arc::clone(&shared_whitelist);
         let up  = unique_paths.clone();
-        let handler = thread::spawn(move || {
+        let _ = thread::spawn(move || {
                 let _ = act_emitted_path(up,child_whitelist);
         }); 
         // handler.join().unwrap();
@@ -143,7 +139,7 @@ fn get_path_match(e_path:&str,wl:&Arc<Vec<Record>>)->Result<(), Box<dyn Error>>{
 
     info!("{:?}|{}|{}--> {:?}",parent,filename.to_str().unwrap(),ext.to_str().unwrap(), fnwoext);
 
-    let mut matched = wl.iter().filter(|x|{
+    let matched = wl.iter().filter(|x|{
         e_path.starts_with(&x.source_folder) & fnwoext.starts_with(&x.base_name.split_once('.').iter().next().unwrap().0)
     }).next();
 

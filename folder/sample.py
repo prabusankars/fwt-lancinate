@@ -1,5 +1,4 @@
 import os
-
 for i in range(100):
     fpath = os.path.join(os.getcwd(),f"failed_jobs{i}.csv")
     print(fpath)
