@@ -97,6 +97,7 @@ fn watch<P: AsRef<Path>>(path: P, whitelist:Vec<Record>) -> notify::Result<()> {
         let _ = thread::spawn(move || {
                 let _ = act_emitted_path(up,child_whitelist);
         }); 
+        
         // handler.join().unwrap();
         // let _ = act_emitted_path(unique_paths.clone());
         info!("{}","waiting for the Next Event..");
